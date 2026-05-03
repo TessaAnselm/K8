@@ -320,6 +320,7 @@ section { padding: 5rem 0; }
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  -webkit-font-smoothing: antialiased;
 }
 .hero-sub {
   color: var(--dim);
