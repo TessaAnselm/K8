@@ -19,7 +19,8 @@
   --dim:     #4a6585;
   --dim2:    #2a3f5a;
   --mono:    'JetBrains Mono', monospace;
-  --sans:    'Syne', sans-serif;
+  --sans:    'Plus Jakarta Sans'clear
+  , sans-serif;
 }
 
 /* ── RESET ───────────────────────────────────────────────── */
