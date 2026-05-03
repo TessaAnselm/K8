@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K8s Security Lab — Container & Kubernetes Attack Playbook</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- ── STYLESHEETS ─────────────────────────────────────── -->
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/timeline.css">
+<link rel="stylesheet" href="assets/css/mitre.css">
+<link rel="stylesheet" href="assets/css/newest.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<link rel="stylesheet" href="assets/css/defense.css">
+</head>
+<body>
+
+<!-- ============================================================
+     NAV
+============================================================ -->
+<nav>
+  <a class="nav-logo" href="#hero">K8s<span>/</span>SecLab</a>
+  <div class="nav-links">
+    <a href="#intro">Intro</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#mitre">MITRE</a>
+    <a href="#newest">2026 Attacks</a>
+    <a href="#poc">POC</a>
+    <a href="#lab">Lab</a>
+    <a href="#defense">Defense</a>
+  </div>
+  <span class="nav-badge">● Live Research</span>
+</nav>
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<section id="hero">
+<div class="wrap">
+  <div class="hero-eyebrow">Container & Kubernetes Security Research</div>
+  <h1 class="hero-title">K8s Security Lab</h1>
+  <p class="hero-sub">A hands-on playbook covering real CVEs, the MITRE ATT&CK framework, and step-by-step lab modules from the first vulnerability in 2016 to the LiteLLM supply chain attack of 2026.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-n r">90+</div><div class="hero-stat-l">CVEs 2016–2026</div></div>
+    <div class="hero-stat"><div class="hero-stat-n y">53%</div><div class="hero-stat-l">Misconfiguration</div></div>
+    <div class="hero-stat"><div class="hero-stat-n r">38%</div><div class="hero-stat-l">Code Bugs</div></div>
+    <div class="hero-stat"><div class="hero-stat-n p">9%</div><div class="hero-stat-l">Supply Chain</div></div>
+    <div class="hero-stat"><div class="hero-stat-n g" id="hero-progress-stat">0/9</div><div class="hero-stat-l">Lab Complete</div></div>
+  </div>
+  <div class="hero-nav">
+    <a class="hero-btn primary" href="#newest">See 2026 Attacks</a>
+    <a class="hero-btn ghost"   href="#lab">Start Lab</a>
+    <a class="hero-btn ghost"   href="#mitre">MITRE Framework</a>
+    <a class="hero-btn ghost"   href="#timeline">CVE Timeline</a>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     INTRO
+============================================================ -->
+<section id="intro">
+<div class="wrap">
+  <div class="section-label">Foundation</div>
+  <h2 class="section-title">What Is Kubernetes & Why Is It Attacked?</h2>
+  <p class="section-sub">Kubernetes (K8s) is an open-source system for automating deployment, scaling, and management of containerized applications. Google open-sourced it in 2014. Today it runs most major companies' infrastructure making it the highest-value target in cloud security.</p>
+
+  <div class="grid-2" style="margin-bottom:2.5rem">
+    <div class="card">
+      <div class="sub-title">The Restaurant Analogy</div>
+      <p style="font-size:.88rem;line-height:1.7;color:var(--dim)">
+        Think of Kubernetes like a restaurant.<br> The <strong style="color:var(--text)">dining room</strong>
+        (your apps) is public — customers come in, eat, leave. <br>The
+        <strong style="color:var(--text)">kitchen + manager's office</strong> (the K8s control plane)
+        should never be public. <br>But misconfigured clusters accidentally put the manager's office
+        on the street with the door unlocked.
+      </p>
+    </div>
+    <div class="card">
+      <div class="sub-title">What Attackers Target</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.25rem">
+        <div class="fix-item" style="font-size:.82rem"><strong>API Server (port 6443)</strong> — the brain, controls everything</div>
+        <div class="fix-item" style="font-size:.82rem"><strong>etcd (port 2379)</strong> — raw database, contains all secrets</div>
+        <div class="fix-item" style="font-size:.82rem"><strong>kubelet (port 10250)</strong> — manages each node directly</div>
+        <div class="fix-item" style="font-size:.82rem"><strong>Service accounts</strong> — identity tokens pods use to call the API</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Root Causes</div>
+  <h3 style="font-size:1.3rem;font-weight:700;margin-bottom:.5rem">The 3 Buckets And Why They Overlap</h3>
+  <p style="font-size:.88rem;color:var(--dim);line-height:1.7;max-width:80ch;margin-bottom:1.5rem">
+    Most attacks chain multiple root causes. Remove any one layer and the attack often breaks.
+  </p>
+  <div class="root-causes">
+    <div class="root-card misc">
+      <div class="root-icon">⚙️</div>
+      <div class="root-pct y">53%</div>
+      <div class="root-title">Misconfiguration</div>
+      <p class="root-desc">Human error — exposed API server, over-permissioned service accounts, missing Pod Security Admission. K8s did what it was told. The fix is policy enforcement and automation, not a patch.</p>
+    </div>
+    <div class="root-card code">
+      <div class="root-icon">🐛</div>
+      <div class="root-pct r">38%</div>
+      <div class="root-title">Code Bugs (CVEs)</div>
+      <p class="root-desc">Software flaws regardless of configuration — memory bugs, logic errors, input validation failures. You can configure perfectly and still be vulnerable. The fix is patching K8s, runc, the kernel, ingress controllers.</p>
+    </div>
+    <div class="root-card supply">
+      <div class="root-icon">📦</div>
+      <div class="root-pct p">9%</div>
+      <div class="root-title">Supply Chain</div>
+      <p class="root-desc">Something you pulled in is already compromised — a base image with CVEs, a poisoned PyPI package like LiteLLM 1.82.7. The fix is scanning, signing, and pinning all dependency versions.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;border-left:3px solid var(--warn)">
+    <div class="sub-title">How They Chain Together</div>
+    <div class="code-wrap">
+      <div class="code"><span class="cm">  # Real attack pattern — none of these work alone</span>
+<span class="d">    Malicious PyPI package installed  </span>  <span class="cm">  ← Supply Chain</span>
+  + <span class="w">Kubernetes SA token auto-mounted  </span>  <span class="cm">  ← Misconfiguration</span>
+  + <span class="w">Token has cluster-wide secret access</span>  <span class="cm">← Misconfiguration</span>
+  + <span class="w">No network policy blocking egress </span>  <span class="cm">  ← Misconfiguration</span>
+  = <span class="ok">Full cluster compromise + exfiltration</span></div>
+
+    </div>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     TIMELINE — rendered from data/cves.js
+============================================================ -->
+<section id="timeline">
+<div class="wrap">
+  <div class="section-label">History</div>
+  <h2 class="section-title">90 CVEs: 2014 → 2026</h2>
+  <p class="section-sub">Click any entry to expand detection commands. Sort and filter to find what you need.</p>
+
+  <div class="tl-controls">
+    <button class="tl-btn active" id="sortNewest" onclick="sortTimeline('newest',this)">↓ Newest First</button>
+    <button class="tl-btn"        id="sortOldest" onclick="sortTimeline('oldest',this)">↑ Oldest First</button>
+    <span class="tl-filter-sep">|</span>
+    <button class="tl-filter f-all      active" onclick="filterTimeline('all',     this)">All</button>
+    <button class="tl-filter f-critical"        onclick="filterTimeline('critical',this)">Critical</button>
+    <button class="tl-filter f-high"            onclick="filterTimeline('high',    this)">High</button>
+    <button class="tl-filter f-supply"          onclick="filterTimeline('supply',  this)">Supply Chain</button>
+  </div>
+
+  <div class="timeline-wrap">
+    <!-- injected by renderTimeline() in cves.js -->
+    <div class="timeline-track" id="timelineTrack"></div>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     MITRE ATT&CK
+============================================================ -->
+<section id="mitre">
+<div class="wrap">
+  <div class="section-label">Framework</div>
+  <h2 class="section-title">MITRE ATT&CK for Containers</h2>
+  <p class="section-sub">Click any tactic to highlight all timeline entries that map to it. Every lab scenario is tagged to its ATT&CK technique so you understand where it sits in the kill chain.</p>
+
+  <!-- Global search -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input
+      class="search-input"
+      id="globalSearch"
+      placeholder="Search CVEs, tools, techniques, tactics..."
+      oninput="handleSearch(this.value)"
+    >
+    <span class="search-count" id="searchCount"></span>
+  </div>
+
+  <div class="mitre-grid">
+    <div class="mitre-tactic" onclick="filterByMitre('TA0001',this)">
+      <div class="mitre-tactic-id">TA0001</div>
+      <div class="mitre-tactic-name">Initial Access</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1195 — Supply Chain</div>
+        <div class="mitre-tech">T1190 — Exploit Public App</div>
+        <div class="mitre-tech">T1078 — Valid Accounts</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0002',this)">
+      <div class="mitre-tactic-id">TA0002</div>
+      <div class="mitre-tactic-name">Execution</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1610 — Deploy Container</div>
+        <div class="mitre-tech">T1059 — Command Execution</div>
+        <div class="mitre-tech">T1546 — Event Triggered</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0004',this)">
+      <div class="mitre-tactic-id">TA0004</div>
+      <div class="mitre-tactic-name">Privilege Escalation</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1611 — Escape to Host</div>
+        <div class="mitre-tech">T1068 — Exploit Vuln</div>
+        <div class="mitre-tech">T1134 — Token Manipulation</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0006',this)">
+      <div class="mitre-tactic-id">TA0006</div>
+      <div class="mitre-tactic-name">Credential Access</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1552 — Unsecured Creds</div>
+        <div class="mitre-tech">T1528 — Steal App Token</div>
+        <div class="mitre-tech">T1212 — Exploit for Creds</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0008',this)">
+      <div class="mitre-tactic-id">TA0008</div>
+      <div class="mitre-tactic-name">Lateral Movement</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1550 — Use Alt Auth</div>
+        <div class="mitre-tech">T1021 — Remote Services</div>
+        <div class="mitre-tech">T1210 — Exploit Remote</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0003',this)">
+      <div class="mitre-tactic-id">TA0003</div>
+      <div class="mitre-tactic-name">Persistence</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1543 — System Service</div>
+        <div class="mitre-tech">T1098 — Account Manip</div>
+        <div class="mitre-tech">T1525 — Implant Image</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0010',this)">
+      <div class="mitre-tactic-id">TA0010</div>
+      <div class="mitre-tactic-name">Exfiltration</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1041 — Exfil over C2</div>
+        <div class="mitre-tech">T1567 — Exfil to Cloud</div>
+      </div>
+    </div>
+    <div class="mitre-tactic" onclick="filterByMitre('TA0040',this)">
+      <div class="mitre-tactic-id">TA0040</div>
+      <div class="mitre-tactic-name">Impact</div>
+      <div class="mitre-techniques">
+        <div class="mitre-tech">T1485 — Data Destruction</div>
+        <div class="mitre-tech">T1496 — Resource Hijack</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mitre-highlight-banner" id="mitreBanner">
+    <span>💡</span>
+    <span id="mitreBannerText">Click any tactic above → the CVE timeline will highlight entries that map to it</span>
+    <button class="mitre-banner-clear" onclick="clearMitreFilter()">Clear</button>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     NEWEST ATTACKS
+============================================================ -->
+<section id="newest">
+<div class="wrap">
+  <div class="section-label">Top 3</div>
+  <h2 class="section-title">Newest Attacks</h2>
+  <p class="section-sub">The most recent and dangerous attacks on Kubernetes infrastructure, ordered newest first.</p>
+
+  <!-- LiteLLM Featured -->
+  <div class="card" style="border:1px solid rgba(168,85,247,.4);border-top:3px solid var(--purple);margin-bottom:1.5rem">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap">
+      <span class="sev supply">Supply Chain</span>
+      <span class="sev critical">Critical</span>
+      <span style="font-family:var(--mono);font-size:.72rem;color:var(--dim)">March 24, 2026</span>
+      <span style="font-family:var(--mono);font-size:.72rem;background:rgba(168,85,247,.1);color:var(--purple);padding:.15rem .5rem;border-radius:2px;border:1px solid rgba(168,85,247,.3)">★ Featured Case Study</span>
+    </div>
+    <h3 style="font-size:1.3rem;font-weight:800;margin-bottom:.5rem">LiteLLM, Trivy, and TeamPCP: The 3 Hop Supply Chain Attack</h3>
+    <p style="font-size:.88rem;color:var(--dim);line-height:1.7;margin-bottom:1.5rem">TeamPCP compromised Trivy, a tool used across thousands of CI CD pipelines, then used stolen publishing credentials to poison LiteLLM, an AI gateway downloaded over 3.4 million times daily. The malicious versions deployed a Kubernetes cluster takeover payload, impacting multiple layers of the software supply chain. This attack spans all three root cause categories and maps to more than eight MITRE ATT and CK techniques.</p>
+
+    <div class="sub-title">The Attack Chain</div>
+    <div class="attack-chain">
+      <div class="chain-step">
+        <span class="chain-num">01</span>
+        <div>
+          <div class="chain-title">Trivy CI/CD Compromised — CVE-2026-33634 (CVSS 9.4)</div>
+          <div class="chain-desc">TeamPCP exploited a misconfigured pull_request_target workflow in Trivy's GitHub CI to exfiltrate Aqua Security's PyPI publish token. Security scanners are uniquely dangerous — they have broad read access to environment variables and runner memory by design.</div>
+          <div class="chain-mitre"><span class="mitre-tag">T1078 — Valid Accounts</span><span class="mitre-tag">T1552 — Unsecured Creds</span></div>
+        </div>
+      </div>
+      <div class="chain-step">
+        <span class="chain-num">02</span>
+        <div>
+          <div class="chain-title">Checkmarx KICS Also Compromised</div>
+          <div class="chain-desc">Using stolen credentials, TeamPCP pivoted to compromise KICS. Each compromised environment yielded credentials that unlocked the next target. Phase 08 of an ongoing campaign begun December 2025.</div>
+          <div class="chain-mitre"><span class="mitre-tag">T1195 — Supply Chain</span><span class="mitre-tag">T1078 — Valid Accounts</span></div>
+        </div>
+      </div>
+      <div class="chain-step">
+        <span class="chain-num">03</span>
+        <div>
+          <div class="chain-title">LiteLLM 1.82.7 + 1.82.8 Poisoned on PyPI</div>
+          <div class="chain-desc">Malicious versions published directly to PyPI, bypassing GitHub release process. Version 1.82.8 used a .pth file — executed automatically on every Python interpreter startup. Live for ~40 minutes before quarantine.</div>
+          <div class="chain-mitre"><span class="mitre-tag">T1195.001 — Compromise Software Supply Chain</span><span class="mitre-tag">T1546 — Event Triggered Execution</span></div>
+        </div>
+      </div>
+      <div class="chain-step">
+        <span class="chain-num">04</span>
+        <div>
+          <div class="chain-title">3-Stage Payload Executes on Victim Systems</div>
+          <div class="chain-desc">Once installed, the payload ran immediately — even during pip install itself. No user interaction beyond installation required.</div>
+          <div class="chain-mitre"><span class="mitre-tag">T1059 — Command Execution</span></div>
+        </div>
+      </div>
+      <div class="chain-step">
+        <span class="chain-num">05</span>
+        <div>
+          <div class="chain-title">Kubernetes Cluster Fully Compromised</div>
+          <div class="chain-desc">If a K8s service account token was found at the standard mount path, the payload read all secrets across every namespace and deployed privileged pods named node-setup-{node_name} to every node in kube-system, mounting the host filesystem.</div>
+          <div class="chain-mitre"><span class="mitre-tag">T1528 — Steal App Token</span><span class="mitre-tag">T1610 — Deploy Container</span><span class="mitre-tag">T1611 — Escape to Host</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title" style="margin-top:1.5rem">The 3-Stage Payload</div>
+    <div class="payload-stages">
+      <div class="payload-stage">
+        <div class="payload-stage-num">Stage 1</div>
+        <div class="payload-stage-title">Credential Harvester</div>
+        <div class="payload-items">
+          <div class="payload-item">SSH private keys + configs</div>
+          <div class="payload-item">AWS / GCP / Azure credentials</div>
+          <div class="payload-item">Kubernetes configs + SA tokens</div>
+          <div class="payload-item">.env files + shell history</div>
+          <div class="payload-item">Crypto wallet files</div>
+          <div class="payload-item">50+ secret categories total</div>
+        </div>
+      </div>
+      <div class="payload-stage s2">
+        <div class="payload-stage-num">Stage 2</div>
+        <div class="payload-stage-title">K8s Lateral Movement</div>
+        <div class="payload-items">
+          <div class="payload-item">Read SA token at standard mount path</div>
+          <div class="payload-item">Enumerate all cluster nodes</div>
+          <div class="payload-item">Deploy alpine:latest privileged pod to every node</div>
+          <div class="payload-item">Mount host filesystem in each pod</div>
+          <div class="payload-item">Pods named: node-setup-{node_name}</div>
+        </div>
+      </div>
+      <div class="payload-stage s3">
+        <div class="payload-stage-num">Stage 3</div>
+        <div class="payload-stage-title">Persistent Backdoor</div>
+        <div class="payload-items">
+          <div class="payload-item">systemd service: sysmon.service</div>
+          <div class="payload-item">Beacons every 50 minutes to C2</div>
+          <div class="payload-item">C2: checkmarx[.]zone</div>
+          <div class="payload-item">Returns YouTube link to fool sandboxes</div>
+          <div class="payload-item">Spawns detached child process</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IOC Panel -->
+    <div class="ioc-panel">
+      <div class="ioc-title">Indicators of Compromise (IOCs) — LiteLLM / TeamPCP</div>
+      <div class="ioc-grid">
+        <div>
+          <div class="ioc-group-title">Packages</div>
+          <div class="ioc-item">litellm==1.82.7</div>
+          <div class="ioc-item">litellm==1.82.8</div>
+          <div class="ioc-item">telnyx==4.87.1</div>
+          <div class="ioc-item">telnyx==4.87.2</div>
+        </div>
+        <div>
+          <div class="ioc-group-title">Files</div>
+          <div class="ioc-item">litellm_init.pth</div>
+          <div class="ioc-item">~/.config/sysmon/sysmon.py</div>
+          <div class="ioc-item">~/.config/systemd/user/sysmon.service</div>
+          <div class="ioc-item">/tmp/tpcp.tar.gz</div>
+        </div>
+        <div>
+          <div class="ioc-group-title">Network (C2)</div>
+          <div class="ioc-item">checkmarx[.]zone</div>
+          <div class="ioc-item">models[.]litellm[.]cloud</div>
+        </div>
+        <div>
+          <div class="ioc-group-title">K8s Artifacts</div>
+          <div class="ioc-item">pods: node-setup-*</div>
+          <div class="ioc-item">namespace: kube-system</div>
+          <div class="ioc-item">image: alpine:latest</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-title" style="margin-top:1.5rem">Detection Commands</div>
+    <div class="code-wrap">
+      <div class="code"><span class="cm"># Check installed version</span>
+<span class="c">pip</span> show litellm <span class="f">| grep</span> Version
+<span class="cm"># Compromised: 1.82.7 or 1.82.8</span>
+
+<span class="cm"># Find malicious .pth file</span>
+<span class="c">find</span> ~/.cache/uv <span class="f">-name</span> "litellm_init.pth"
+<span class="c">find</span> $(python <span class="f">-c</span> "import site; print(site.getsitepackages()[0])") <span class="f">-name</span> "*.pth" <span class="f">| xargs grep -l</span> "subprocess"
+
+<span class="cm"># Check for persistence</span>
+<span class="c">ls</span> ~/.config/sysmon/sysmon.py
+<span class="c">systemctl</span> <span class="f">--user status</span> sysmon.service
+
+<span class="cm"># Check K8s for malicious pods</span>
+<span class="c">kubectl</span> get pods <span class="f">-n</span> kube-system <span class="f">| grep</span> node-setup
+
+<span class="cm"># Check outbound C2 connections</span>
+<span class="c">ss</span> <span class="f">-tnp | grep -E</span> "checkmarx.zone|litellm.cloud"</div>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="sub-title" style="margin-top:1.25rem">Remediation</div>
+    <div class="fix-list">
+      <div class="fix-item">Upgrade to LiteLLM version 1.83.0 or later using the updated CI/CD v2 pipeline</div>
+      <div class="fix-item">Immediately rotate all credentials on systems that previously ran versions 1.82.7 or 1.82.8</div>
+      <div class="fix-item">Inspect and clean the kube-system namespace by removing node-setup pods and auditing all running workloads</div>
+      <div class="fix-item">Remove any malicious persistence by deleting sysmon.py, disabling the sysmon service, and clearing the ~/.config/sysmon/ directory</div>
+      <div class="fix-item">Enforce dependency pinning and eliminate unpinned pip installations in CI/CD pipelines</div>
+      <div class="fix-item">Restrict GitHub Actions usage with an organization-wide allowlist and block all unverified actions</div>
+    </div>
+  </div>
+
+  <!-- IngressNightmare -->
+  <div class="attack-card" onclick="toggleCard(this)">
+    <div class="attack-card-header">
+      <span class="sev critical">Critical · CVSS 9.8</span>
+      <div>
+        <div class="attack-card-title">IngressNightmare — CVE-2025-1974</div>
+        <div class="attack-card-date">2025 · nginx Ingress · 43% of cloud environments vulnerable</div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="attack-card-body">
+      <p style="font-size:.88rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">Unauthenticated RCE on K8s clusters using nginx ingress. Crafted requests to the admission webhook inject arbitrary nginx config, execute code as the ingress controller, and access all cluster secrets — no credentials required.</p>
+      <div class="attack-body-grid">
+        <div>
+          <div class="sub-title">Detection</div>
+          <div class="code-wrap">
+            <div class="code"><span class="c">kubectl</span> get pods <span class="f">-n</span> ingress-nginx \
+  <span class="f">-o jsonpath</span>=\
+  '{.items[*].spec.containers[*].image}'
+<span class="cm"># Must be >= ingress-nginx 1.10.1</span>
+
+<span class="c">kubectl</span> get validatingwebhookconfigurations</div>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div style="margin-top:.75rem">
+            <span class="mitre-tag">T1190 — Exploit Public App</span>
+            <span class="mitre-tag">T1552 — Unsecured Creds</span>
+          </div>
+        </div>
+        <div>
+          <div class="sub-title">Remediation</div>
+          <div class="fix-list">
+            <div class="fix-item">Upgrade nginx-ingress to ≥ 1.10.1 immediately</div>
+            <div class="fix-item">Restrict admission webhook to internal network only</div>
+            <div class="fix-item">Ingress controller SA should NOT have cluster-wide secret access</div>
+            <div class="fix-item">Disable snippet annotations if not needed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- React2Shell -->
+  <div class="attack-card" onclick="toggleCard(this)">
+    <div class="attack-card-header">
+      <span class="sev critical">Critical</span>
+      <div>
+        <div class="attack-card-title">React2Shell — CVE-2025-55182</div>
+        <div class="attack-card-date">December 2025 · Exploited within 2 days of disclosure</div>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="attack-card-body">
+      <p style="font-size:.88rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">Insecure deserialization in React Server Components' Flight protocol allows unauthenticated RCE. Attackers pivoted to steal cloud credentials from pod environment variables and metadata services within days of disclosure.</p>
+      <div class="attack-body-grid">
+        <div>
+          <div class="sub-title">Detection</div>
+          <div class="code-wrap">
+            <div class="code"><span class="cm"># Cloud creds should NEVER be in env vars</span>
+<span class="c">kubectl</span> get pods <span class="f">-A -o json | jq</span> \
+  '.items[].spec.containers[].env[]?
+  | select(.name | test("AWS|AZURE|GCP|TOKEN"))'</div>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <div style="margin-top:.75rem">
+            <span class="mitre-tag">T1190 — Exploit Public App</span>
+            <span class="mitre-tag">T1552 — Unsecured Creds</span>
+          </div>
+        </div>
+        <div>
+          <div class="sub-title">Remediation</div>
+          <div class="fix-list">
+            <div class="fix-item">Apply React Server Components security patch</div>
+            <div class="fix-item">Never store cloud credentials as pod environment variables</div>
+            <div class="fix-item">Block IMDS access from app pods via NetworkPolicy</div>
+            <div class="fix-item">Use Workload Identity — no static credentials at all</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     POC — Home Lab Instructions
+============================================================ -->
+<section id="poc">
+<div class="wrap">
+  <div class="section-label">Home Lab for Featured Case Study CVE-2026-33634</div>
+  <h2 class="section-title">Run It Yourself — POC Lab</h2>
+  <p class="section-sub">Five Bash scripts that simulate the full LiteLLM and TeamPCP supply chain attack on your local machine. Everything runs on localhost through Minikube. Nothing leaves your machine, and all payloads are safe.</p>
+
+  <!-- SAFE disclaimer -->
+  <div class="poc-disclaimer">
+    <div class="poc-disclaimer-icon">🔒</div>
+    <div>
+      <div class="poc-disclaimer-title">Safe & Isolated — Localhost Only</div>
+      <div class="poc-disclaimer-desc">All payloads write to <code>~/k8s-security-lab/logs/</code> only. No real credentials are stolen. No real C2 traffic. The "malicious" package only logs to a local file. Designed for macOS with Docker Desktop.</div>
+    </div>
+  </div>
+
+  <!-- PREREQUISITES -->
+  <div class="poc-prereq-wrap">
+    <div class="sub-title" style="margin-bottom:1rem">Prerequisites</div>
+    <div class="poc-prereq-grid">
+      <div class="poc-prereq-item">
+        <div class="poc-prereq-name">🐳 Docker Desktop</div>
+        <div class="poc-prereq-desc">Must be running before setup</div>
+        <a class="poc-prereq-link" href="https://www.docker.com/products/docker-desktop/" target="_blank">Download →</a>
+      </div>
+      <div class="poc-prereq-item">
+        <div class="poc-prereq-name">🍺 Homebrew</div>
+        <div class="poc-prereq-desc">macOS package manager</div>
+        <div class="code-wrap" style="margin-top:.5rem">
+          <div class="code" style="font-size:.7rem;padding:.5rem .75rem">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+      <div class="poc-prereq-item">
+        <div class="poc-prereq-name">☸️ minikube + kubectl</div>
+        <div class="poc-prereq-desc">Installed automatically by setup.sh</div>
+        <div class="code-wrap" style="margin-top:.5rem">
+          <div class="code" style="font-size:.7rem;padding:.5rem .75rem">brew install minikube kubernetes-cli</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+      <div class="poc-prereq-item">
+        <div class="poc-prereq-name">🐍 Python 3</div>
+        <div class="poc-prereq-desc">Already on macOS — verify with:</div>
+        <div class="code-wrap" style="margin-top:.5rem">
+          <div class="code" style="font-size:.7rem;padding:.5rem .75rem">python3 --version</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RUN ORDER -->
+  <div class="sub-title" style="margin:2rem 0 1rem">Run Order</div>
+  <div class="poc-steps">
+
+    <div class="poc-step">
+      <div class="poc-step-num">1</div>
+      <div class="poc-step-body">
+        <div class="poc-step-header">
+          <div class="poc-step-title">setup.sh — Install & build the lab environment</div>
+          <span class="sev high">~3 min</span>
+        </div>
+        <div class="poc-step-desc">Installs minikube if missing, creates lab folder structure, plants dummy credential files, builds the fake malicious package, starts your local K8s cluster, and deploys the victim pod.</div>
+        <div class="code-wrap">
+          <div class="code"><span class="c">cd</span> poc/
+<span class="c">bash</span> setup.sh</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="poc-step-what">
+          <div class="poc-step-what-title">What it creates:</div>
+          <div class="poc-step-what-items">
+            <span>~/k8s-security-lab/</span>
+            <span>minikube cluster</span>
+            <span>victim-pod in lab-victim namespace</span>
+            <span>dummy .env + AWS credential files</span>
+            <span>fake litellm package</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="poc-step">
+      <div class="poc-step-num">2</div>
+      <div class="poc-step-body">
+        <div class="poc-step-header">
+          <div class="poc-step-title">lab-a-pth-execution.sh — The .pth Auto-Execution Vector</div>
+          <span class="sev high">~5 min</span>
+        </div>
+        <div class="poc-step-desc">Demonstrates how litellm 1.82.8 executed malicious code on every Python startup before any app code ran. You create a venv, drop in the fake .pth file, start Python normally, and watch the payload fire silently in the background.</div>
+        <div class="code-wrap">
+          <div class="code"><span class="c">bash</span> lab-a-pth-execution.sh</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="poc-step-what">
+          <div class="poc-step-what-title">You will see:</div>
+          <div class="poc-step-what-items">
+            <span>.pth file in site-packages</span>
+            <span>Auto-execution log written</span>
+            <span>Stage 1 harvester runs</span>
+            <span>harvested_items.json output</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="poc-step">
+      <div class="poc-step-num">3</div>
+      <div class="poc-step-body">
+        <div class="poc-step-header">
+          <div class="poc-step-title">lab-b-k8s-lateral.sh — Kubernetes Lateral Movement</div>
+          <span class="sev critical">~10 min</span>
+        </div>
+        <div class="poc-step-desc">Stage 2 of the attack. Reads the auto-mounted SA token from inside the victim pod, uses it to enumerate all cluster secrets, deploys a privileged alpine pod to kube-system (named node-setup-lab matching the real IOC), and mounts the host filesystem.</div>
+        <div class="code-wrap">
+          <div class="code"><span class="c">bash</span> lab-b-k8s-lateral.sh</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="poc-step-what">
+          <div class="poc-step-what-title">You will see:</div>
+          <div class="poc-step-what-items">
+            <span>Real JWT SA token extracted</span>
+            <span>All cluster secrets enumerated</span>
+            <span>node-setup-lab pod in kube-system</span>
+            <span>Host /etc/ contents from inside pod</span>
+            <span>Cloud creds exposed in env vars</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="poc-step">
+      <div class="poc-step-num">4</div>
+      <div class="poc-step-body">
+        <div class="poc-step-header">
+          <div class="poc-step-title">lab-c-detect-respond.sh — Detection & Response</div>
+          <span class="sev medium">~5 min</span>
+        </div>
+        <div class="poc-step-desc">Runs every detection command from the site against your live compromised cluster. Finds the malicious pod, exposed credentials, overprivileged service accounts, and suspicious .pth files. Generates a detection report and walks through the remediation checklist.</div>
+        <div class="code-wrap">
+          <div class="code"><span class="c">bash</span> lab-c-detect-respond.sh</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <div class="poc-step-what">
+          <div class="poc-step-what-title">You will see:</div>
+          <div class="poc-step-what-items">
+            <span>IOC scan results</span>
+            <span>Privileged pod detection</span>
+            <span>RBAC misconfiguration flagged</span>
+            <span>detection_report.txt generated</span>
+            <span>Full remediation checklist</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="poc-step">
+      <div class="poc-step-num">5</div>
+      <div class="poc-step-body">
+        <div class="poc-step-header">
+          <div class="poc-step-title">cleanup.sh — Tear everything down</div>
+          <span class="sev launch">Cleanup</span>
+        </div>
+        <div class="poc-step-desc">Removes all lab resources cleanly — deletes the malicious pod, victim namespace, ClusterRoleBinding, Python venv, and any stray .pth files. Logs are preserved for reference. Optionally stops minikube.</div>
+        <div class="code-wrap">
+          <div class="code"><span class="c">bash</span> cleanup.sh</div>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LAB FOLDER STRUCTURE -->
+  <div class="sub-title" style="margin:2rem 0 1rem">What Gets Created on Your Machine</div>
+  <div class="code-wrap">
+    <div class="code"><span class="cm"># All lab files live here — nothing touches system directories</span>
+~/k8s-security-lab/
+  logs/
+    pth_execution.log       <span class="cm"># Lab A: proof of .pth auto-execution</span>
+    harvester.log           <span class="cm"># Lab A: Stage 1 harvester output</span>
+    harvested_items.json    <span class="cm"># Lab A: structured findings</span>
+    stolen_sa_token.txt     <span class="cm"># Lab B: extracted JWT token</span>
+    lab_b_findings.log      <span class="cm"># Lab B: lateral movement summary</span>
+    detection_report.txt    <span class="cm"># Lab C: full IOC detection report</span>
+  dummy-creds/
+    .env                    <span class="cm"># Fake credentials for harvester to find</span>
+    fake-aws-credentials    <span class="cm"># Fake AWS config file</span>
+  fake-package/             <span class="cm"># The simulated malicious litellm package</span>
+  k8s-manifests/            <span class="cm"># YAML for victim + malicious pods</span>
+  c2-sim/                   <span class="cm"># Localhost C2 server + beacon client</span></div>
+    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  </div>
+
+  <!-- DIFFERENCE FROM LAB MODULES -->
+  <div class="grid-2" style="margin-top:2rem">
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="sub-title">Lab Modules (this site)</div>
+      <p style="font-size:.85rem;color:var(--dim);line-height:1.7">Reference guide — read the concept, see the commands, understand the fix. Like a textbook. No setup required, works in any browser.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--ok)">
+      <div class="sub-title">POC Scripts (this section)</div>
+      <p style="font-size:.85rem;color:var(--dim);line-height:1.7">Hands-on simulation — actually run the attack against a real local cluster. You see the token get stolen, the pod deploy, the host filesystem mount. Like a flight simulator.</p>
+    </div>
+  </div>
+
+</div>
+
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     LAB MODULES
+============================================================ -->
+<section id="lab">
+<div class="wrap">
+  <div class="section-label">Hands-On</div>
+  <h2 class="section-title">Lab Modules</h2>
+  <p class="section-sub">Three modules that follow the attacker’s journey. Check off each scenario as you complete it. Your progress is saved in your browser.</p>
+
+  <div class="lab-progress">
+    <span class="progress-label">Lab Progress</span>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <span class="progress-count" id="progressCount">0 / 9 complete</span>
+    <button class="reset-progress" onclick="resetProgress()">Reset</button>
+  </div>
+
+  <div class="module-tabs">
+    <button class="mod-tab active" onclick="showModule('m1',this)">Module 1 — Getting In</button>
+    <button class="mod-tab"        onclick="showModule('m2',this)">Module 2 — Breaking Out</button>
+    <button class="mod-tab"        onclick="showModule('m3',this)">Module 3 — Taking Over</button>
+  </div>
+
+  <!-- MODULE 1 -->
+  <div class="module-panel active" id="m1">
+    <div class="module-header">
+      <div class="module-info">
+        <div class="module-name">Module 1: Getting In</div>
+        <div class="module-mitre">MITRE TA0001 — Initial Access</div>
+        <div class="module-desc">How attackers gain their first foothold — misconfiguration, supply chain, and application exploits.</div>
+      </div>
+      <div class="module-meta"><div class="module-count" style="color:var(--accent)">3</div><div class="module-count-l">Scenarios</div></div>
+    </div>
+
+    <div class="scenario" id="s1" onclick="handleScenarioClick(event,'s1')">
+      <div class="scenario-header">
+        <span class="scenario-num">1.1</span>
+        <span class="scenario-title">Exposed API Server — The Unlocked Front Door</span>
+        <span class="sev high">Misconfiguration</span>
+        <div class="scenario-check" id="check-s1" onclick="event.stopPropagation();toggleCheck('s1')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">The K8s API server bound to 0.0.0.0 and reachable from the internet. Shodan indexes it before any attacker looks. Querying /version unauthenticated reveals the exact K8s version for targeted CVE lookup.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Reproduce (minikube)</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">minikube</span> start \
+  <span class="f">--extra-config</span>=apiserver.anonymous-auth=true
+
+<span class="cm"># Verify — returns K8s version with no auth</span>
+<span class="c">curl</span> <span class="f">-k</span> https://$(minikube ip):8443/version
+
+<span class="c">nmap</span> <span class="f">-sV -p</span> 6443,8443,10250 &lt;target-ip&gt;</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1190 — Exploit Public-Facing App</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Detect</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">kubectl</span> cluster-info
+<span class="c">ss</span> <span class="f">-tlnp | grep</span> 6443
+
+<span class="c">kubectl</span> get pod kube-apiserver-* \
+  <span class="f">-n</span> kube-system <span class="f">-o yaml | grep</span> anonymous</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div class="sub-title" style="margin-top:1rem">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Bind API server to private IP — never 0.0.0.0</div>
+              <div class="fix-item">Set --anonymous-auth=false in kube-apiserver flags</div>
+              <div class="fix-item">Place behind VPN or bastion host</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s2" onclick="handleScenarioClick(event,'s2')">
+      <div class="scenario-header">
+        <span class="scenario-num">1.2</span>
+        <span class="scenario-title">Malicious Container Image — Supply Chain Entry</span>
+        <span class="sev supply">Supply Chain</span>
+        <div class="scenario-check" id="check-s2" onclick="event.stopPropagation();toggleCheck('s2')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">Pulling an unvetted image from Docker Hub that contains a known CVE or outright malicious code. Over 50% of public Docker images contain at least one critical flaw.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Scan Before You Pull</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">trivy</span> image <span class="f">--severity HIGH,CRITICAL</span> ubuntu:20.04
+
+<span class="cm"># Fail CI/CD pipeline on critical CVE</span>
+<span class="c">trivy</span> image <span class="f">--exit-code 1 --severity CRITICAL</span> myapp:latest
+
+<span class="cm"># Pin by digest, not tag</span>
+<span class="c">docker</span> inspect myimage:latest \
+  <span class="f">--format</span> '{{.RepoDigests}}'</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1195.001 — Compromise Software Supply Chain</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Use only images from trusted private registries</div>
+              <div class="fix-item">Pin images by digest, not tag — tags are mutable</div>
+              <div class="fix-item">Enforce image signing with cosign + verify at admission</div>
+              <div class="fix-item">Run Trivy in CI/CD — block critical CVEs before deploy</div>
+              <div class="fix-item">Use distroless or scratch base images</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s3" onclick="handleScenarioClick(event,'s3')">
+      <div class="scenario-header">
+        <span class="scenario-num">1.3</span>
+        <span class="scenario-title">Unauthenticated kubelet Read-Only Port (10255)</span>
+        <span class="sev high">Misconfiguration</span>
+        <div class="scenario-check" id="check-s3" onclick="event.stopPropagation();toggleCheck('s3')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">Older clusters left kubelet's read-only port open with zero authentication. A single curl returns every running pod, environment variables, and sometimes credentials in plaintext.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Reproduce</div>
+            <div class="code-wrap">
+              <div class="code"><span class="cm"># Zero auth — returns full pod dump</span>
+<span class="c">curl</span> http://&lt;node-ip&gt;:10255/pods
+<span class="c">nmap</span> <span class="f">-p</span> 10255 &lt;node-ip&gt;</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1190 — Exploit Public-Facing App</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="code-wrap">
+              <div class="code"><span class="cm"># kubelet-config.yaml</span>
+readOnlyPort: <span class="ok">0</span>
+authentication:
+  anonymous:
+    enabled: <span class="d">false</span></div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div class="fix-list">
+              <div class="fix-item">Set --read-only-port=0 to disable entirely</div>
+              <div class="fix-item">Restrict port 10250 to control plane IPs only</div>
+              <div class="fix-item">Run kube-bench to audit kubelet config</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2 -->
+  <div class="module-panel" id="m2">
+    <div class="module-header m2">
+      <div class="module-info">
+        <div class="module-name">Module 2: Breaking Out</div>
+        <div class="module-mitre">MITRE TA0004 — Privilege Escalation + T1611 — Escape to Host</div>
+        <div class="module-desc">Once inside a pod, how attackers break out of the container and reach the host. These are real code-level CVEs — configuration alone cannot protect you.</div>
+      </div>
+      <div class="module-meta"><div class="module-count" style="color:var(--danger)">3</div><div class="module-count-l">Scenarios</div></div>
+    </div>
+
+    <div class="scenario" id="s4" onclick="handleScenarioClick(event,'s4')">
+      <div class="scenario-header">
+        <span class="scenario-num">2.1</span>
+        <span class="scenario-title">runc Leaky Vessels — CVE-2024-21626</span>
+        <span class="sev critical">Critical</span>
+        <div class="scenario-check" id="check-s4" onclick="event.stopPropagation();toggleCheck('s4')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">A file descriptor leak in runc allows a crafted container image to access the host filesystem. Affects Docker, containerd, CRI-O, Podman.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">How It Works + Detect</div>
+            <div class="code-wrap">
+              <div class="code"><span class="cm"># Malicious Dockerfile exploits FD leak</span>
+WORKDIR <span class="d">/proc/self/fd/&lt;leaked-fd&gt;</span>
+
+<span class="c">runc</span> <span class="f">--version</span>
+<span class="cm"># Vulnerable: &lt; 1.1.12</span>
+<span class="c">docker</span> info <span class="f">| grep -i</span> runc
+<span class="c">trivy</span> image <span class="f">--severity CRITICAL</span> myimage</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1611 — Escape to Host</span><span class="mitre-tag">T1068 — Exploit Vulnerability</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Update runc ≥ 1.1.12 / Docker Engine ≥ 25.0.2</div>
+              <div class="fix-item">Use rootless containers — eliminates host UID mapping</div>
+              <div class="fix-item">Apply seccomp profile blocking open() on /proc/self/fd</div>
+              <div class="fix-item">Use gVisor (runsc) for untrusted workloads</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s5" onclick="handleScenarioClick(event,'s5')">
+      <div class="scenario-header">
+        <span class="scenario-num">2.2</span>
+        <span class="scenario-title">Privileged Pod → Host Mount Escape</span>
+        <span class="sev critical">Misconfiguration</span>
+        <div class="scenario-check" id="check-s5" onclick="event.stopPropagation();toggleCheck('s5')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">Running a pod with privileged: true and hostPID: true gives essentially root access to the host — the exact technique the LiteLLM payload used on every cluster node.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">The LiteLLM Pod Spec (Lab Only)</div>
+            <div class="code-wrap">
+              <div class="code"><span class="cm"># DO NOT run in production</span>
+spec:
+  hostPID: <span class="d">true</span>
+  containers:
+  - name: setup
+    image: alpine:latest
+    securityContext:
+      privileged: <span class="d">true</span>
+    volumeMounts:
+    - mountPath: /host
+      name: host-root
+  volumes:
+  - name: host-root
+    hostPath:
+      path: <span class="d">/</span></div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+          </div>
+          <div>
+            <div class="sub-title">Detect + Fix</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">kubectl</span> get pods <span class="f">-A -o json | jq</span> \
+  '.items[] | select(
+  .spec.containers[].securityContext.privileged
+  ==true) | .metadata.name'</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div class="fix-list">
+              <div class="fix-item">Enable Pod Security Admission — restricted profile</div>
+              <div class="fix-item">Never allow privileged: true in production</div>
+              <div class="fix-item">Block hostPath mounts via OPA/Gatekeeper</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s6" onclick="handleScenarioClick(event,'s6')">
+      <div class="scenario-header">
+        <span class="scenario-num">2.3</span>
+        <span class="scenario-title">Linux kernel nftables Escape — CVE-2024-0193</span>
+        <span class="sev critical">Critical · Code Bug</span>
+        <div class="scenario-check" id="check-s6" onclick="event.stopPropagation();toggleCheck('s6')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">A use-after-free in Linux kernel nftables (< 6.6.7) exploitable from inside a container with CAP_NET_ADMIN. Root escalation on the host with no misconfiguration required.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Detection</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">uname</span> <span class="f">-r</span>
+<span class="cm"># Vulnerable: &lt; 6.6.7</span>
+
+<span class="c">kubectl</span> get pods <span class="f">-A -o json | jq</span> \
+  '.items[].spec.containers[]
+  .securityContext.capabilities.add[]?
+  | select(. == "NET_ADMIN")'</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1068 — Exploit for Privilege Escalation</span><span class="mitre-tag">T1611 — Escape to Host</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Patch kernel ≥ 6.6.7 or apply distro update (Ubuntu USN-6609)</div>
+              <div class="fix-item">Drop ALL capabilities — add back only what's needed</div>
+              <div class="fix-item">Apply seccomp profile blocking nftables syscalls</div>
+              <div class="fix-item">Use gVisor — intercepts syscalls before hitting the real kernel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 3 -->
+  <div class="module-panel" id="m3">
+    <div class="module-header m3">
+      <div class="module-info">
+        <div class="module-name">Module 3: Taking Over</div>
+        <div class="module-mitre">MITRE TA0008 — Lateral Movement + TA0003 — Persistence</div>
+        <div class="module-desc">Once on a node, how attackers escalate to cluster-admin, pivot into cloud accounts, and install persistent access that survives reboots.</div>
+      </div>
+      <div class="module-meta"><div class="module-count" style="color:var(--purple)">3</div><div class="module-count-l">Scenarios</div></div>
+    </div>
+
+    <div class="scenario" id="s7" onclick="handleScenarioClick(event,'s7')">
+      <div class="scenario-header">
+        <span class="scenario-num">3.1</span>
+        <span class="scenario-title">nginx Annotation Injection → cluster-admin — CVE-2024-7646</span>
+        <span class="sev critical">Critical</span>
+        <div class="scenario-check" id="check-s7" onclick="event.stopPropagation();toggleCheck('s7')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">An attacker with CREATE Ingress permission injects malicious nginx config via annotations, leaking the ingress controller's SA token — which in default installs has cluster-admin access to all secrets.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Detect</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">kubectl</span> get ingress <span class="f">-A -o json | jq</span> \
+  '.items[].metadata.annotations
+  | to_entries[] | select(.key
+  | contains("snippet"))'
+
+<span class="c">kubectl</span> auth can-i <span class="f">--list</span> \
+  <span class="f">--as</span>=system:serviceaccount:\
+  ingress-nginx:ingress-nginx</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1190 — Exploit Public App</span><span class="mitre-tag">T1528 — Steal App Token</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Upgrade nginx-ingress to ≥ 1.11.2</div>
+              <div class="fix-item">Set --enable-annotation-validation=true</div>
+              <div class="fix-item">Restrict Ingress CREATE to trusted namespaces via RBAC</div>
+              <div class="fix-item">Remove cluster-admin from ingress controller SA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s8" onclick="handleScenarioClick(event,'s8')">
+      <div class="scenario-header">
+        <span class="scenario-num">3.2</span>
+        <span class="scenario-title">Overprivileged ServiceAccount — Pod to Cloud</span>
+        <span class="sev high">Misconfiguration</span>
+        <div class="scenario-check" id="check-s8" onclick="event.stopPropagation();toggleCheck('s8')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">The default SA in many clusters is over-permissioned. The LiteLLM payload read the auto-mounted SA token, enumerated all nodes, deployed pods cluster-wide, then pivoted to cloud credentials in environment variables.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Audit</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">kubectl</span> auth can-i <span class="f">--list</span> \
+  <span class="f">--as</span>=system:serviceaccount:default:default
+
+<span class="c">kubectl</span> get pods <span class="f">-A -o json | jq</span> \
+  '.items[].spec.containers[].env[]?
+  | select(.name | test("AWS|GCP|AZURE"))'</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1528 — Steal Application Access Token</span><span class="mitre-tag">T1552 — Unsecured Credentials</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Set automountServiceAccountToken: false by default</div>
+              <div class="fix-item">Create per-workload SA with minimum required permissions</div>
+              <div class="fix-item">Never store cloud credentials as environment variables</div>
+              <div class="fix-item">Use Workload Identity (GKE/EKS/AKS) — no static credentials</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scenario" id="s9" onclick="handleScenarioClick(event,'s9')">
+      <div class="scenario-header">
+        <span class="scenario-num">3.3</span>
+        <span class="scenario-title">Persistent systemd Backdoor via Privileged Pod</span>
+        <span class="sev critical">Persistence</span>
+        <div class="scenario-check" id="check-s9" onclick="event.stopPropagation();toggleCheck('s9')"></div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="scenario-body">
+        <p style="font-size:.87rem;color:var(--dim);line-height:1.7;margin-bottom:1.25rem">The final stage of the LiteLLM attack. After escaping to the host via a privileged pod, the payload installs a systemd service beaconing to C2 every 50 minutes — surviving pod deletion and reboots.</p>
+        <div class="scenario-grid">
+          <div>
+            <div class="sub-title">Detection</div>
+            <div class="code-wrap">
+              <div class="code"><span class="c">systemctl</span> list-units <span class="f">--type=service | grep</span> sysmon
+<span class="c">ls</span> ~/.config/sysmon/
+<span class="c">kubectl</span> get pods <span class="f">-A | grep</span> node-setup
+<span class="c">ss</span> <span class="f">-tnp | grep -E</span> \
+  "checkmarx.zone|litellm.cloud"
+<span class="c">falco</span> <span class="f">-r</span> /etc/falco/falco_rules.yaml \
+  <span class="f">-o</span> json_output=true <span class="f">| grep</span> systemd</div>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <div style="margin-top:.75rem"><span class="mitre-tag">T1543 — Create or Modify System Process</span><span class="mitre-tag">TA0003 — Persistence</span></div>
+          </div>
+          <div>
+            <div class="sub-title">Fix</div>
+            <div class="fix-list">
+              <div class="fix-item">Remove sysmon.py — disable and delete sysmon.service</div>
+              <div class="fix-item">Block egress from nodes to unknown IPs via NetworkPolicy</div>
+              <div class="fix-item">Use Falco rules to alert on new systemd service creation from containers</div>
+              <div class="fix-item">Implement node immutability — read-only root filesystem</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+<div class="divider"></div>
+
+<!-- ============================================================
+     DEFENSE
+============================================================ -->
+<section id="defense">
+<div class="wrap">
+  <div class="section-label">Defender's Guide</div>
+  <h2 class="section-title">Defense Playbook</h2>
+  <p class="section-sub">Each attack stage is mitigated by a specific tool or policy. Defense in depth requires an attacker to bypass multiple layers of protection, so removing any single layer can break the attack chain.</p>
+  <div class="defense-grid">
+    <div class="defense-card"><div class="defense-icon">🔍</div><div class="defense-title">Image & Dependency Scanning</div><div class="defense-tools"><div class="defense-tool">Trivy<span class="tool-desc">Images, IaC, SBOMs</span></div><div class="defense-tool">Grype<span class="tool-desc">Fast CVE scanner</span></div><div class="defense-tool">Snyk<span class="tool-desc">Package + container</span></div><div class="defense-tool">Endor Labs<span class="tool-desc">Supply chain</span></div></div></div>
+    <div class="defense-card"><div class="defense-icon">📋</div><div class="defense-title">Cluster Config Auditing</div><div class="defense-tools"><div class="defense-tool">kube-bench<span class="tool-desc">CIS Benchmark</span></div><div class="defense-tool">Polaris<span class="tool-desc">Best practices</span></div><div class="defense-tool">kubescape<span class="tool-desc">NSA/MITRE framework</span></div><div class="defense-tool">kubectl-who-can<span class="tool-desc">RBAC audit</span></div></div></div>
+    <div class="defense-card"><div class="defense-icon">🛡️</div><div class="defense-title">Admission Control</div><div class="defense-tools"><div class="defense-tool">OPA/Gatekeeper<span class="tool-desc">Policy enforcement</span></div><div class="defense-tool">Kyverno<span class="tool-desc">K8s-native policies</span></div><div class="defense-tool">Pod Security Admission<span class="tool-desc">Built-in K8s 1.25+</span></div><div class="defense-tool">cosign + Sigstore<span class="tool-desc">Image signing</span></div></div></div>
+    <div class="defense-card"><div class="defense-icon">👁️</div><div class="defense-title">Runtime Detection</div><div class="defense-tools"><div class="defense-tool">Falco<span class="tool-desc">Syscall-level</span></div><div class="defense-tool">Tetragon<span class="tool-desc">eBPF security</span></div><div class="defense-tool">Sysdig<span class="tool-desc">Container forensics</span></div><div class="defense-tool">Datadog Security<span class="tool-desc">Cloud SIEM</span></div></div></div>
+    <div class="defense-card"><div class="defense-icon">🌐</div><div class="defense-title">Network Control</div><div class="defense-tools"><div class="defense-tool">NetworkPolicy<span class="tool-desc">Pod-level firewall</span></div><div class="defense-tool">Cilium<span class="tool-desc">eBPF networking</span></div><div class="defense-tool">Istio<span class="tool-desc">mTLS service mesh</span></div><div class="defense-tool">Calico<span class="tool-desc">Policy engine</span></div></div></div>
+    <div class="defense-card"><div class="defense-icon">🔑</div><div class="defense-title">Secrets Management</div><div class="defense-tools"><div class="defense-tool">External Secrets Op.<span class="tool-desc">Vault/AWS SM sync</span></div><div class="defense-tool">Secrets Store CSI<span class="tool-desc">Mount as files</span></div><div class="defense-tool">Workload Identity<span class="tool-desc">No static creds</span></div><div class="defense-tool">HashiCorp Vault<span class="tool-desc">Dynamic secrets</span></div></div></div>
+  </div>
+  <div class="card" style="margin-top:2rem;border-left:3px solid var(--accent)">
+    <div class="sub-title">The Supply Chain Golden Rules — 2026 Edition</div>
+    <div class="grid-2" style="margin-top:.5rem">
+      <div class="fix-list">
+        <div class="fix-item">Pin every dependency by exact version + hash — never use unpinned pip install</div>
+        <div class="fix-item">Treat your CI/CD pipeline as part of your attack surface</div>
+        <div class="fix-item">Rotate credentials immediately if any tool in your pipeline is compromised</div>
+        <div class="fix-item">Subscribe to security advisories for every tool in your stack</div>
+      </div>
+      <div class="fix-list">
+        <div class="fix-item">Assume any system that installed a compromised package is fully compromised</div>
+        <div class="fix-item">Use allowlists for GitHub Actions — block unverified actions</div>
+        <div class="fix-item">Apply least privilege everywhere: RBAC, SA tokens, cloud IAM, CI/CD</div>
+        <div class="fix-item">Enable audit logging on the API server — log every request</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer style="border-top:1px solid var(--border);padding:2rem 0;font-family:var(--mono);font-size:.72rem;color:var(--dim)">
+<div class="wrap">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;align-items:center">
+    <span>// K8s Security Lab — Educational use only. Test in isolated environments.</span>
+    <div style="display:flex;gap:1.25rem">
+      <a href="https://kubernetes.io/docs/reference/issues-security/official-cve-feed/" target="_blank" style="color:var(--dim);text-decoration:none">CVE Feed</a>
+      <a href="https://attack.mitre.org/matrices/enterprise/containers/" target="_blank" style="color:var(--dim);text-decoration:none">MITRE Containers</a>
+      <a href="https://docs.litellm.ai/blog/security-update-march-2026" target="_blank" style="color:var(--dim);text-decoration:none">LiteLLM Incident</a>
+    </div>
+    <span>Updated May 2026</span>
+  </div>
+</div>
+</footer>
+
+<!-- ── DATA (must load before renderer) ──────────────────── -->
+<script src="assets/data/cves.js"></script>
+
+<!-- ── SCRIPTS ───────────────────────────────────────────── -->
+<script src="assets/js/copy.js"></script>
+<script src="assets/js/timeline.js"></script>
+<script src="assets/js/mitre.js"></script>
+<script src="assets/js/lab.js"></script>
+<script src="assets/js/search.js"></script>
+<script src="assets/js/nav.js"></script>
+
+<!-- ── TIMELINE RENDERER (reads from CVES data) ──────────── -->
+<script>
+(function renderTimeline() {
+  const track = document.getElementById('timelineTrack');
+  if (!track || typeof CVES === 'undefined') return;
+
+  /* Sort newest-first by default */
+  const sorted = [...CVES].sort((a, b) => b.year - a.year);
+
+  sorted.forEach(cve => {
+    /* Build detect panel columns */
+    let detectHTML = '';
+    if (cve.detect.body) {
+      detectHTML = `<p style="font-size:.82rem;color:var(--dim)">${cve.detect.body}</p>`;
+    } else if (cve.detect.cols && cve.detect.cols.length) {
+      const cols = cve.detect.cols.map(col => `
+        <div>
+          <p style="font-size:.78rem;color:var(--dim);margin-bottom:.5rem">${col.label}</p>
+          <div class="code-wrap">
+            <div class="code">${col.code}</div>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+        </div>`).join('');
+      detectHTML = `<div class="detect-grid">${cols}</div>`;
+    }
+
+    /* MITRE tags */
+    const mitreTags = (cve.detect.mitreTag || [])
+      .map(t => `<span class="mitre-tag">${t}</span>`).join('');
+
+    /* CVE pill list */
+    const cvePills = cve.cves
+      .map(c => `<span class="tl-cve">${c}</span>`).join('');
+
+    /* Dot color override */
+    const dotStyle = cve.dotColor ? `style="border-color:${cve.dotColor}"` : '';
+
+    track.insertAdjacentHTML('beforeend', `
+      <div class="tl-year" data-sev="${cve.sev}" data-year="${cve.year}" data-mitre="${cve.mitre}">
+        <div class="tl-year-label">${cve.year}</div>
+        <div class="tl-dot" ${dotStyle}></div>
+        <div class="tl-content" onclick="toggleTL(this)">
+          <div class="tl-header">
+            <span class="sev ${cve.sev}">${cve.badge}</span>
+            <span class="tl-title">${cve.title}</span>
+            <span class="tl-chevron">▼</span>
+          </div>
+          <div class="tl-desc">${cve.desc}</div>
+          ${cvePills ? `<div class="tl-cves">${cvePills}</div>` : ''}
+          <div class="tl-detect">
+            <div class="sub-title">// Detect</div>
+            ${detectHTML}
+            ${mitreTags ? `<div style="margin-top:.75rem">${mitreTags}</div>` : ''}
+          </div>
+        </div>
+      </div>`);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+/* ============================================================
+   MITRE.CSS — MITRE ATT&CK grid styles
+   K8s Security Lab
+============================================================ */
+
+.mitre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px,1fr));
+  gap: .75rem;
+  margin-top: 2rem;
+}
+
+.mitre-tactic {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem;
+  border-top: 3px solid var(--purple);
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+.mitre-tactic:hover {
+  border-color: rgba(168,85,247,.5);
+  transform: translateY(-2px);
+}
+.mitre-tactic.selected {
+  background: rgba(168,85,247,.1);
+  border-color: var(--purple);
+  border-top-color: var(--purple);
+}
+
+.mitre-tactic-id {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .35rem;
+}
+.mitre-tactic-name {
+  font-size: .88rem;
+  font-weight: 700;
+  margin-bottom: .6rem;
+}
+
+.mitre-techniques { display: flex; flex-direction: column; gap: .3rem; }
+.mitre-tech {
+  font-family: var(--mono);
+  font-size: .67rem;
+  color: var(--dim);
+  padding: .2rem .4rem;
+  background: rgba(168,85,247,.06);
+  border-radius: 2px;
+  border-left: 2px solid rgba(168,85,247,.3);
+}
+
+/* ── HIGHLIGHT BANNER ────────────────────────────────────── */
+.mitre-highlight-banner {
+  background: rgba(168,85,247,.08);
+  border: 1px solid rgba(168,85,247,.25);
+  border-radius: 4px;
+  padding: .75rem 1rem;
+  margin-top: 1.25rem;
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--purple);
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.mitre-banner-clear {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(168,85,247,.3);
+  color: var(--purple);
+  font-family: var(--mono);
+  font-size: .62rem;
+  padding: .2rem .5rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.mitre-banner-clear:hover {
+  background: rgba(168,85,247,.15);
+}

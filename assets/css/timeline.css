@@ -1,0 +1,155 @@
+/* ============================================================
+   TIMELINE.CSS — CVE timeline styles
+   K8s Security Lab
+============================================================ */
+
+/* ── CONTROLS ────────────────────────────────────────────── */
+.tl-controls {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.tl-btn {
+  font-family: var(--mono);
+  font-size: .7rem;
+  padding: .4rem .9rem;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  background: transparent;
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.tl-btn:hover           { border-color: var(--accent); color: var(--accent); }
+.tl-btn.active          { background: rgba(0,212,255,.1); border-color: var(--accent); color: var(--accent); }
+
+.tl-filter-sep          { color: var(--dim2); font-size: .8rem; }
+
+.tl-filter {
+  font-family: var(--mono);
+  font-size: .7rem;
+  padding: .4rem .9rem;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+  color: var(--dim);
+  background: transparent;
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.tl-filter:hover                { color: var(--text); }
+.tl-filter.f-all.active         { background: rgba(0,212,255,.1);  border-color: var(--accent); color: var(--accent); }
+.tl-filter.f-critical.active    { background: rgba(255,51,85,.1);  border-color: var(--danger); color: var(--danger); }
+.tl-filter.f-high.active        { background: rgba(255,170,0,.1);  border-color: var(--warn);   color: var(--warn); }
+.tl-filter.f-supply.active      { background: rgba(168,85,247,.1); border-color: var(--purple); color: var(--purple); }
+
+/* ── TRACK ───────────────────────────────────────────────── */
+.timeline-wrap { position: relative; margin-top: 1rem; }
+.timeline-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-left: 2px solid var(--border2);
+  margin-left: 5rem;
+  padding-left: 2rem;
+}
+
+/* ── YEAR ENTRY ──────────────────────────────────────────── */
+.tl-year {
+  position: relative;
+  margin-bottom: 1.5rem;
+  transition: opacity .3s, transform .3s;
+}
+.tl-year.hidden { display: none; }
+
+/* MITRE highlight states */
+.tl-year.mitre-match .tl-content {
+  border-color: rgba(168,85,247,.5);
+  box-shadow: 0 0 14px rgba(168,85,247,.15);
+}
+.tl-year.mitre-dim { opacity: .25; }
+
+.tl-dot {
+  position: absolute;
+  left: -2.6rem;
+  top: .35rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--bg);
+}
+.tl-year-label {
+  position: absolute;
+  left: -6.5rem;
+  top: .15rem;
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--dim);
+  font-weight: 700;
+}
+
+/* ── CONTENT CARD ────────────────────────────────────────── */
+.tl-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.tl-content:hover { border-color: var(--border2); }
+.tl-content.open  { border-color: rgba(0,212,255,.4); }
+
+.tl-header {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .5rem;
+  flex-wrap: wrap;
+}
+.tl-title   { font-size: .92rem; font-weight: 700; flex: 1; }
+.tl-chevron { color: var(--dim); transition: transform .3s; font-size: .72rem; flex-shrink: 0; }
+.tl-content.open .tl-chevron { transform: rotate(180deg); }
+
+.tl-desc    { font-size: .82rem; color: var(--dim); line-height: 1.55; }
+
+.tl-cves    { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .6rem; }
+.tl-cve {
+  font-family: var(--mono);
+  font-size: .63rem;
+  background: rgba(0,212,255,.06);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  padding: .15rem .45rem;
+  border-radius: 2px;
+}
+
+/* ── DETECT PANEL ────────────────────────────────────────── */
+.tl-detect {
+  display: none;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  animation: fadeIn .2s ease;
+}
+.tl-content.open .tl-detect { display: block; }
+
+.detect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+  gap: 1rem;
+  margin-top: .75rem;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .timeline-track    { margin-left: 3rem; }
+  .tl-year-label     { left: -3.5rem; font-size: .65rem; }
+  .tl-dot            { left: -1.6rem; }
+}

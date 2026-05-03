@@ -1,0 +1,41 @@
+/* ============================================================
+   DEFENSE.CSS — Defense playbook section
+   K8s Security Lab
+============================================================ */
+
+.defense-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.defense-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  border-top: 3px solid var(--ok);
+}
+.defense-icon  { font-size: 1.5rem; margin-bottom: .6rem; }
+.defense-title { font-size: .95rem; font-weight: 700; margin-bottom: .75rem; }
+
+.defense-tools { display: flex; flex-direction: column; gap: .4rem; }
+.defense-tool {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: var(--mono);
+  font-size: .75rem;
+  padding: .4rem .6rem;
+  background: rgba(0,230,118,.05);
+  border: 1px solid rgba(0,230,118,.15);
+  border-radius: 3px;
+  color: var(--text);
+}
+.defense-tool::before { content: '✓'; color: var(--ok); flex-shrink: 0; }
+.tool-desc {
+  font-size: .7rem;
+  color: var(--dim);
+  font-family: var(--sans);
+  margin-left: auto;
+}

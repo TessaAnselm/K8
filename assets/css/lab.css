@@ -1,0 +1,277 @@
+/* ============================================================
+   LAB.CSS — Lab modules, scenarios, progress tracker
+   K8s Security Lab
+============================================================ */
+
+/* ── MODULE TABS ─────────────────────────────────────────── */
+.module-tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.mod-tab {
+  font-family: var(--mono);
+  font-size: .72rem;
+  padding: .45rem 1.1rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  transition: all .2s;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  background: transparent;
+}
+.mod-tab:hover        { border-color: var(--accent); color: var(--accent); }
+.mod-tab.active       { background: rgba(0,212,255,.1); border-color: var(--accent); color: var(--accent); }
+
+.module-panel         { display: none; }
+.module-panel.active  { display: block; }
+
+/* ── MODULE HEADER ───────────────────────────────────────── */
+.module-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  border-left: 4px solid var(--accent);
+}
+.module-header.m2 { border-left-color: var(--danger); }
+.module-header.m3 { border-left-color: var(--purple); }
+
+.module-name  { font-size: 1.2rem; font-weight: 800; margin-bottom: .25rem; }
+.module-mitre { font-family: var(--mono); font-size: .72rem; color: var(--purple); margin-bottom: .5rem; }
+.module-desc  { font-size: .88rem; color: var(--dim); line-height: 1.6; max-width: 55ch; }
+
+.module-meta        { text-align: right; }
+.module-count       { font-family: var(--mono); font-size: 2rem; font-weight: 700; color: var(--accent); }
+.module-count-l     { font-size: .72rem; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+
+/* ── PROGRESS BAR ────────────────────────────────────────── */
+.lab-progress {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .75rem 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.progress-label {
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.progress-bar-wrap {
+  flex: 1;
+  min-width: 120px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  border-radius: 3px;
+  transition: width .4s ease;
+  width: 0%;
+}
+.progress-count {
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.reset-progress {
+  font-family: var(--mono);
+  font-size: .62rem;
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: .2rem .5rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.reset-progress:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── SCENARIO CARD ───────────────────────────────────────── */
+.scenario {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  transition: border-color .2s;
+}
+.scenario.completed { border-color: rgba(0,230,118,.3); }
+
+.scenario-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+}
+.scenario-header:hover { background: rgba(255,255,255,.02); }
+
+.scenario-num {
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,212,255,.1);
+  border: 1px solid rgba(0,212,255,.25);
+  border-radius: 2px;
+  padding: .2rem .5rem;
+  flex-shrink: 0;
+}
+.scenario-title { font-size: .95rem; font-weight: 700; flex: 1; }
+
+/* Checkbox */
+.scenario-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border2);
+  border-radius: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  background: transparent;
+  font-size: .7rem;
+  color: #000;
+  font-weight: 700;
+}
+.scenario-check:hover              { border-color: var(--ok); }
+.scenario.completed .scenario-check { background: var(--ok); border-color: var(--ok); }
+
+/* Body */
+.scenario-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+}
+.scenario.open .scenario-body { display: block; animation: fadeIn .2s ease; }
+.scenario.open .chevron        { transform: rotate(180deg); }
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+  gap: 1.25rem;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .module-meta { display: none; }
+}
+
+/* ============================================================
+   POC SECTION — Home lab instructions
+============================================================ */
+
+/* ── DISCLAIMER BANNER ───────────────────────────────────── */
+.poc-disclaimer {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  background: rgba(0,230,118,.06);
+  border: 1px solid rgba(0,230,118,.2);
+  border-radius: 6px;
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+.poc-disclaimer-icon       { font-size: 1.4rem; flex-shrink: 0; }
+.poc-disclaimer-title      { font-size: .9rem; font-weight: 700; color: var(--ok); margin-bottom: .25rem; }
+.poc-disclaimer-desc       { font-size: .82rem; color: var(--dim); line-height: 1.6; }
+.poc-disclaimer-desc code  { font-family: var(--mono); color: var(--accent); font-size: .78rem; }
+
+/* ── PREREQUISITES GRID ──────────────────────────────────── */
+.poc-prereq-wrap  { margin-bottom: 1rem; }
+.poc-prereq-grid  { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; }
+.poc-prereq-item  {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.1rem;
+}
+.poc-prereq-name  { font-size: .9rem; font-weight: 700; margin-bottom: .25rem; }
+.poc-prereq-desc  { font-size: .78rem; color: var(--dim); margin-bottom: .5rem; line-height: 1.5; }
+.poc-prereq-link  {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .68rem;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid rgba(0,212,255,.25);
+  padding: .2rem .55rem;
+  border-radius: 2px;
+  transition: all .2s;
+  margin-top: .35rem;
+}
+.poc-prereq-link:hover { background: rgba(0,212,255,.1); }
+
+/* ── RUN ORDER STEPS ─────────────────────────────────────── */
+.poc-steps { display: flex; flex-direction: column; gap: 1rem; }
+
+.poc-step {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.25rem;
+  transition: border-color .2s;
+}
+.poc-step:hover { border-color: var(--border2); }
+
+.poc-step-num {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.2);
+  border-radius: 4px;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.poc-step-body   { flex: 1; min-width: 0; }
+.poc-step-header { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.poc-step-title  { font-size: .95rem; font-weight: 700; flex: 1; }
+.poc-step-desc   { font-size: .84rem; color: var(--dim); line-height: 1.65; margin-bottom: .75rem; }
+
+/* What you will see */
+.poc-step-what       { margin-top: .75rem; }
+.poc-step-what-title { font-family: var(--mono); font-size: .65rem; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .4rem; }
+.poc-step-what-items { display: flex; flex-wrap: wrap; gap: .35rem; }
+.poc-step-what-items span {
+  font-family: var(--mono);
+  font-size: .67rem;
+  color: var(--ok);
+  background: rgba(0,230,118,.07);
+  border: 1px solid rgba(0,230,118,.2);
+  padding: .15rem .45rem;
+  border-radius: 2px;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .poc-step      { flex-direction: column; gap: .75rem; }
+  .poc-step-num  { width: 1.8rem; height: 1.8rem; font-size: .9rem; }
+}

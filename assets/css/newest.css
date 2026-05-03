@@ -1,0 +1,159 @@
+/* ============================================================
+   NEWEST.CSS — Newest attacks section: chain, payload, IOC
+   K8s Security Lab
+============================================================ */
+
+/* ── ATTACK CHAIN ────────────────────────────────────────── */
+.attack-chain { display: flex; flex-direction: column; gap: .5rem; margin: 1.5rem 0; }
+
+.chain-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  position: relative;
+}
+.chain-step::after {
+  content: '↓';
+  position: absolute;
+  bottom: -1.1rem;
+  left: 1.75rem;
+  color: var(--dim);
+  font-size: .9rem;
+  z-index: 1;
+}
+.chain-step:last-child::after { display: none; }
+
+.chain-num {
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--purple);
+  background: rgba(168,85,247,.1);
+  border: 1px solid rgba(168,85,247,.3);
+  border-radius: 2px;
+  padding: .2rem .5rem;
+  flex-shrink: 0;
+  margin-top: .1rem;
+}
+.chain-title { font-size: .92rem; font-weight: 700; margin-bottom: .25rem; }
+.chain-desc  { font-size: .82rem; color: var(--dim); line-height: 1.55; }
+.chain-mitre { margin-top: .4rem; }
+
+/* ── PAYLOAD STAGES ──────────────────────────────────────── */
+.payload-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.payload-stage {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.1rem;
+  border-top: 3px solid var(--danger);
+}
+.payload-stage.s2 { border-top-color: var(--warn); }
+.payload-stage.s3 { border-top-color: var(--purple); }
+
+.payload-stage-num {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: .4rem;
+}
+.payload-stage-title { font-size: .9rem; font-weight: 700; margin-bottom: .5rem; }
+
+.payload-items { display: flex; flex-direction: column; gap: .3rem; }
+.payload-item  { font-size: .78rem; color: var(--dim); display: flex; gap: .4rem; }
+.payload-item::before                  { content: '▸'; color: var(--danger); flex-shrink: 0; }
+.payload-stage.s2 .payload-item::before { color: var(--warn); }
+.payload-stage.s3 .payload-item::before { color: var(--purple); }
+
+/* ── COLLAPSIBLE ATTACK CARDS ────────────────────────────── */
+.attack-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+.attack-card-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  cursor: pointer;
+}
+.attack-card-header:hover { background: rgba(255,255,255,.02); }
+.attack-card.open .chevron { transform: rotate(180deg); }
+
+.attack-card-title { font-size: .95rem; font-weight: 700; }
+.attack-card-date  { font-family: var(--mono); font-size: .68rem; color: var(--dim); }
+
+.chevron { color: var(--dim); transition: transform .3s; font-size: .75rem; }
+
+.attack-card-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+}
+.attack-card.open .attack-card-body { display: block; animation: fadeIn .2s ease; }
+
+.attack-body-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+  gap: 1.25rem;
+}
+
+/* ── IOC PANEL ───────────────────────────────────────────── */
+.ioc-panel {
+  background: rgba(255,51,85,.05);
+  border: 1px solid rgba(255,51,85,.2);
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+.ioc-title {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.ioc-title::before { content: '⚠'; font-size: .9rem; }
+
+.ioc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+  gap: .75rem;
+}
+.ioc-group-title {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: .4rem;
+}
+.ioc-item {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--danger);
+  padding: .2rem .5rem;
+  background: rgba(255,51,85,.06);
+  border-radius: 2px;
+  margin-bottom: .25rem;
+  word-break: break-all;
+}
